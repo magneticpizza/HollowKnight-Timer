@@ -166,17 +166,18 @@ namespace HKTimer.UI {
                 if(this.uiOpen) {
                     this.uiOpen = false;
                     this.SetShown(false);
-                    if(this.gm.hero_ctrl != null) this.gm.hero_ctrl.RegainControl();
+                    if(GameManager.instance.hero_ctrl != null) GameManager.instance.hero_ctrl.RegainControl();
                 } else {
                     this.uiOpen = true;
                     this.SetShown(true);
                     this.cursor = 0;
                     this.UpdateCursor();
-                    if(this.gm.hero_ctrl != null) this.gm.hero_ctrl.RelinquishControl();
+                    if(GameManager.instance.hero_ctrl != null) GameManager.instance.hero_ctrl.RelinquishControl();
                 }
             } else if(this.uiOpen) {
-                var inputHandler = this.gm.inputHandler;
-                if(inputHandler.inputActions.left.WasPressed) {
+                var inputHandler = GameManager.instance.inputHandler;
+                if (inputHandler == null) return;
+                if (inputHandler.inputActions.left.WasPressed) {
                     this.elements[this.cursor].Left();
                 } else if(inputHandler.inputActions.right.WasPressed) {
                     this.elements[this.cursor].Right();

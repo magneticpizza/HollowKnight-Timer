@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GlobalEnums;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Diagnostics;
 
@@ -16,11 +17,16 @@ namespace HKTimer {
 
         private Text frameDisplay;
 
+        // Save the time per room
+        private List<TimeSpan> roomDelta = new();
+        public int roomCounter = 0;
+
         public void InitDisplay() {
             if(timerCanvas != null) {
                 GameObject.DestroyImmediate(timerCanvas);
             }
-            timerCanvas = CanvasUtil.CreateCanvas(UnityEngine.RenderMode.ScreenSpaceOverlay, new Vector2(1920, 1080));
+            Vector2 vector = HKTimer.settings.usePositionRelativeToResolution ? new Vector2((float)Screen.width, (float)Screen.height) : new Vector2(1920f, 1080f);
+            this.timerCanvas = CanvasUtil.CreateCanvas(0, vector);
             CanvasUtil.CreateFonts();
             frameDisplay = CanvasUtil.CreateTextPanel(
                 timerCanvas,
@@ -47,7 +53,7 @@ namespace HKTimer {
             if(show) GameObject.DontDestroyOnLoad(this.timerCanvas);
         }
 
-        private string TimerText() {
+        public string TimerText() {
             return string.Format(
                 "{0}:{1:D2}.{2:D3}",
                 Math.Floor(this.time.TotalMinutes),
@@ -107,6 +113,16 @@ namespace HKTimer {
             ModHooks.Instance.BeforeSceneLoadHook -= this.OnSyncLoad;
         }
 
+        private TimeSpan calcRoomDelta()
+        {
+            TimeSpan delta = roomDelta[this.roomCounter] - this.time;
+            if (this.time < roomDelta[this.roomCounter])
+            {
+                roomDelta[this.roomCounter] = this.time;
+            }
+            return delta;
+        }
+
         public void Update() {
             if(StringInputManager.GetKeyDown(HKTimer.settings.pause)) {
                 if(this.state != TimerState.STOPPED) this.PauseTimer();
@@ -115,8 +131,31 @@ namespace HKTimer {
             if(StringInputManager.GetKeyDown(HKTimer.settings.reset)) {
                 this.ResetTimer();
             }
-            if(this.state == TimerState.RUNNING && this.TimerShouldBePaused()) {
+            if(StringInputManager.GetKeyDown(HKTimer.settings.removePB))
+            {
+                HKTimer.instance.triggerManager.removeLastAvg();
+            }
+            if (StringInputManager.GetKeyDown(HKTimer.settings.savePB))
+            {
+                if (!HKTimer.instance.triggerManager.runningSegment) return;
+                HKTimer.instance.triggerManager.UpdatePB();
                 this.PauseTimer();
+                HKTimer.instance.triggerManager.runningSegment = false;
+            }
+            if (this.state == TimerState.RUNNING && this.TimerShouldBePaused()) {
+                this.PauseTimer();
+                //this.roomCounter++;
+                //if (this.roomCounter > roomDelta.Count)
+                //{
+                //    roomDelta.Add(this.time);
+                //} else
+                //{
+                //    HKTimer.instance.triggerManager.roomDeltaText(calcRoomDelta());
+                //}
+                //foreach (TimeSpan tempRoom in roomDelta)
+                //{
+                //    HKTimer.instance.Log("RoomDelta: " + tempRoom);
+                //}
                 this.state = TimerState.IN_LOAD;
             } else if(this.state == TimerState.IN_LOAD) {
                 this.StartTimer();

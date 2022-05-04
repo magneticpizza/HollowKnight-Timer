@@ -18,13 +18,16 @@ namespace HKTimer {
         public TriggerManager triggerManager { get; private set; }
         // oh god oh fuck
         public UI.UIManager ui { get; private set; }
+        public static string HKTimerPath;
 
         public override string GetVersion() => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
         public override void Initialize() {
-            if(instance != null) {
+            if (instance != null) {
                 return;
             }
+            HKTimerPath = Application.persistentDataPath + "/HKTimer 1221";
+
             instance = this;
             gameObject = new GameObject();
 
@@ -51,16 +54,26 @@ namespace HKTimer {
         }
 
         public void ReloadSettings() {
-            string path = Application.persistentDataPath + "/hktimer.json";
-            if(!File.Exists(path)) {
-                Modding.Logger.Log("[HKTimer] Writing default settings to " + path);
-                File.WriteAllText(path, JsonConvert.SerializeObject(settings, Formatting.Indented));
+            HKTimerPath = Application.persistentDataPath + "/HKTimer 1221";
+            Directory.CreateDirectory(HKTimerPath);
+            string timerPath = HKTimerPath + "/GlobalSettings.json";
+
+            if (!File.Exists(timerPath)) {
+                // If you used an older version of HKTimer, import settings
+                if (File.Exists(Application.persistentDataPath + "/hktimer.json"))
+                {
+                    File.Copy(Application.persistentDataPath + "/hktimer.json", timerPath);
+                } else
+                {
+                    Modding.Logger.Log("[HKTimer] Writing default settings to " + timerPath);
+                    File.WriteAllText(timerPath, JsonConvert.SerializeObject(settings, Formatting.Indented));
+                }
             } else {
-                Modding.Logger.Log("[HKTimer] Reading settings from " + path);
-                settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(path));
+                Modding.Logger.Log("[HKTimer] Reading settings from " + timerPath);
+                settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(timerPath));
                 // just to add the default shit I guess
                 // might remove this when the format stabilizes
-                File.WriteAllText(path, JsonConvert.SerializeObject(settings, Formatting.Indented));
+                File.WriteAllText(timerPath, JsonConvert.SerializeObject(settings, Formatting.Indented));
                 settings.LogBindErrors();
             }
             // Reload text positions

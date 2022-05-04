@@ -14,7 +14,6 @@ namespace HKTimer.UI {
         public TriggerManager tm { get; set; }
         public HKTimer hktimer { get; set; }
         public Timer timer { get; set; }
-        public GameManager gm { get; set; }
 
         private static readonly Vector2 MIDDLE = new Vector2(0.5f, 0.5f);
 
@@ -22,6 +21,8 @@ namespace HKTimer.UI {
         public UIButton resetPb { get; private set; }
 
         public UIOption<TriggerTypeOption> triggerType { get; private set; }
+
+        public UIOption<int> avgAmountType { get; private set; }
         public UIButton saveTriggers { get; private set; }
         public UIButton loadTriggers { get; private set; }
 
@@ -37,7 +38,6 @@ namespace HKTimer.UI {
             this.tm = tm;
             this.hktimer = hktimer;
             this.timer = timer;
-            this.gm = GameManager.instance;
             return this;
         }
 
@@ -88,12 +88,30 @@ namespace HKTimer.UI {
                 TriggerTypeOption.values,
                 (e) => this.tm.triggerPlaceType = e.variant
             );
+
+            this.avgAmountType = new UIOption<int>(
+                CanvasUtil.CreateTextPanel(
+                    menu, "Avg Amount", 30, TextAnchor.MiddleLeft,
+                    new CanvasUtil.RectData(new Vector2(300, 60), new Vector2(-150, -60), MIDDLE, MIDDLE)
+                ),
+                CanvasUtil.CreateTextPanel(
+                    menu, "", 30, TextAnchor.MiddleRight,
+                    new CanvasUtil.RectData(new Vector2(300, 60), new Vector2(150, -60), MIDDLE, MIDDLE)
+                ),
+                new Vector2(-330, -60),
+                AvgOption.values,
+                (e) => {
+                    this.tm.avgAmount = e;
+                    this.tm.UpdateAvgAmountText();
+                    }
+            );
+
             this.saveTriggers = new UIButton(
                 CanvasUtil.CreateTextPanel(
                     menu, "Save Triggers", 30, TextAnchor.MiddleCenter,
-                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -60), MIDDLE, MIDDLE)
+                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -120), MIDDLE, MIDDLE)
                 ),
-                new Vector2(-210, -60),
+                new Vector2(-210, -120),
                 () => {
                     if(this.tm != null) {
                         this.tm.SaveTriggers();
@@ -104,9 +122,9 @@ namespace HKTimer.UI {
             this.loadTriggers = new UIButton(
                 CanvasUtil.CreateTextPanel(
                     menu, "Load Triggers", 30, TextAnchor.MiddleCenter,
-                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -120), MIDDLE, MIDDLE)
+                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -180), MIDDLE, MIDDLE)
                 ),
-                new Vector2(-210, -120),
+                new Vector2(-210, -180),
                 () => {
                     if(this.tm != null) {
                         this.tm.LoadTriggers();
@@ -118,9 +136,9 @@ namespace HKTimer.UI {
             this.reloadSettings = new UIButton(
                 CanvasUtil.CreateTextPanel(
                     menu, "Reload Settings", 30, TextAnchor.MiddleCenter,
-                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -240), MIDDLE, MIDDLE)
+                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -300), MIDDLE, MIDDLE)
                 ),
-                new Vector2(-210, -240),
+                new Vector2(-210, -300),
                 () => {
                     if(this.hktimer != null) {
                         this.hktimer.ReloadSettings();
@@ -138,6 +156,7 @@ namespace HKTimer.UI {
                 this.showTimer,
                 this.resetPb,
                 this.triggerType,
+                this.avgAmountType,
                 this.saveTriggers,
                 this.loadTriggers,
                 this.reloadSettings
@@ -166,16 +185,16 @@ namespace HKTimer.UI {
                 if(this.uiOpen) {
                     this.uiOpen = false;
                     this.SetShown(false);
-                    if(this.gm.hero_ctrl != null) this.gm.hero_ctrl.RegainControl();
+                    if(GameManager.instance != null) GameManager.instance.hero_ctrl.RegainControl();
                 } else {
                     this.uiOpen = true;
                     this.SetShown(true);
                     this.cursor = 0;
                     this.UpdateCursor();
-                    if(this.gm.hero_ctrl != null) this.gm.hero_ctrl.RelinquishControl();
+                    if(GameManager.instance != null) GameManager.instance.hero_ctrl.RelinquishControl();
                 }
             } else if(this.uiOpen) {
-                var inputHandler = this.gm.inputHandler;
+                var inputHandler = GameManager.instance.inputHandler;
                 if(inputHandler.inputActions.left.WasPressed) {
                     this.elements[this.cursor].Left();
                 } else if(inputHandler.inputActions.right.WasPressed) {
@@ -209,6 +228,11 @@ namespace HKTimer.UI {
         public override string ToString() {
             return enabled ? "On" : "Off";
         }
+    }
+
+    public class AvgOption
+    {
+        public static readonly int[] values = { 3, 5, 10, 15 };
     }
 
     public class TriggerTypeOption {

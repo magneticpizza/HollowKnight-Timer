@@ -1,20 +1,26 @@
 using System;
-using UnityEngine;
+using System.Runtime;
+using System.Globalization;
 using System.IO;
+using System.Text;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UI;
 using Modding;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 using HKTimer.Triggers;
-using System.Text;
-using System.Collections;
 
 namespace HKTimer {
     public class TriggerManager : MonoBehaviour {
 
         public TimeSpan pb { get; set; } = TimeSpan.Zero;
         public TimeSpan pbDelta { get; set; } = TimeSpan.Zero;
+        public TimeSpan avg { get; set; } = TimeSpan.Zero;
+
+        public int avgAmount = 3;
+        public List<TimeSpan> pbAvg = new();
         public bool runningSegment { get; set; } = false;
 
         public TriggerPlaceType triggerPlaceType { get; set; } = TriggerPlaceType.Collision;
@@ -28,6 +34,9 @@ namespace HKTimer {
         private GameObject pbDisplay;
         private GameObject pbStaticTextDisplay;
         private GameObject pbDeltaDisplay;
+        private GameObject avgDisplay;
+        private GameObject avgStaticTextDisplay;
+        private GameObject roomDeltaDisplay;
 
         public Dictionary<string, Type> triggerTypes { get; } = new Dictionary<string, Type>()
         {
@@ -56,6 +65,20 @@ namespace HKTimer {
                     TextAnchor.MiddleRight,
                     Timer.CreateTimerRectData(new Vector2(190, 30), new Vector2(-50, -45))
                 );
+                this.avgDisplay = CanvasUtil.CreateTextPanel(
+                    timerCanvas,
+                    this.AvgText(),
+                    HKTimer.settings.textSize / 2,
+                    TextAnchor.LowerLeft,
+                    Timer.CreateTimerRectData(new Vector2(120, 20), new Vector2(-50, -95))
+                );
+                this.avgStaticTextDisplay = CanvasUtil.CreateTextPanel(
+                    timerCanvas,
+                    "avg " + avgAmount,
+                    HKTimer.settings.textSize / 2,
+                    TextAnchor.MiddleRight,
+                    Timer.CreateTimerRectData(new Vector2(90, 30), new Vector2(0, -95))
+                );
                 this.pbStaticTextDisplay = CanvasUtil.CreateTextPanel(
                     timerCanvas,
                     "PB",
@@ -71,9 +94,17 @@ namespace HKTimer {
                     Timer.CreateTimerRectData(new Vector2(120, 20), new Vector2(-50, -70))
                 );
                 this.pbDeltaDisplay.SetActive(false);
+                this.roomDeltaDisplay = CanvasUtil.CreateTextPanel(
+                    timerCanvas,
+                    this.PbDeltaText(),
+                    HKTimer.settings.textSize / 2,
+                    TextAnchor.MiddleRight,
+                    Timer.CreateTimerRectData(new Vector2(120, 20), new Vector2(-180, -45))
+                );
+                this.roomDeltaDisplay.SetActive(false);
             } else {
                 Modding.Logger.LogError(
-                    "[HKTimer] Timer canvas is null, not creating trigger display"
+                    "[HKTimer] Timer canvas is null, not creating trigger display" 
                 );
             }
         }
@@ -178,11 +209,102 @@ namespace HKTimer {
             );
         }
 
+        public void roomDeltaText(TimeSpan time)
+        {
+            var dur = time.Duration();
+            roomDeltaDisplay.GetComponent<Text>().text = string.Format(
+                "{0}{1}:{2:D2}.{3:D3}",
+                this.pbDelta < TimeSpan.Zero ? "-" : "+",
+                Math.Floor(dur.TotalMinutes),
+                dur.Seconds,
+                dur.Milliseconds
+            );
+        }
+
+        private string AvgText()
+        {
+            return string.Format(
+                "{0}:{1:D2}.{2:D3}",
+                Math.Floor(this.avg.TotalMinutes),
+                this.avg.Seconds,
+                this.avg.Milliseconds
+            );
+        }
+        public void removeLastAvg()
+        {
+            pbAvg.RemoveAt(pbAvg.Count - 1);
+            avg = pbAvg.Count > avgAmount - 1 ? calcAvg(this.avgAmount) : TimeSpan.Zero;
+            avgDisplay.GetComponent<Text>().text = AvgText();
+        }
+
+        public void UpdateAvgAmountText()
+        {
+            this.avgStaticTextDisplay.GetComponent<Text>().text = "avg " + this.avgAmount.ToString();
+            avg = pbAvg.Count > avgAmount - 1 ? calcAvg(this.avgAmount) : TimeSpan.Zero;
+            avgDisplay.GetComponent<Text>().text = AvgText();
+        }
+
+        private TimeSpan calcAvg(int amount)
+        {
+            TimeSpan temp = TimeSpan.Zero;
+            for (int i = pbAvg.Count - amount; i < pbAvg.Count; i++)
+            {
+                temp += pbAvg[i];
+            }
+            return divide(temp,amount);
+        }
+
+        private TimeSpan divide(TimeSpan dividend, int divisor)
+        {
+            double temp = dividend.TotalSeconds / divisor;
+            return TimeSpan.FromSeconds(temp);
+        }
+
+        private void writeAvgToFile()
+        {
+            string finalString = "";
+            foreach (TimeSpan temp in pbAvg)
+            {
+                finalString += string.Format(
+                                    "{0}:{1:D2}.{2:D3}",
+                                    Math.Floor(temp.TotalMinutes),
+                                    temp.Seconds,
+                                    temp.Milliseconds
+                                ) + "\n";
+            }
+            try
+            {
+                File.WriteAllText(HKTimer.HKTimerPath + "/avgTimes.txt", finalString);
+            }
+            catch (Exception e)
+            {
+                HKTimer.instance.LogError(e);
+            }
+            
+        }
+
         public void UpdatePB() {
-            var time = this.timer.time;
+            var avgText = this.avgDisplay.GetComponent<Text>();
             var pbText = this.pbDisplay.GetComponent<Text>();
             var pbDeltaText = this.pbDeltaDisplay.GetComponent<Text>();
+            var time = this.timer.time;
+            pbAvg.Add(time);
+            //HKTimer.instance.Log(pbAvg.Count + " Current times:");
+            //foreach(TimeSpan temp in pbAvg)
+            //{
+            //    HKTimer.instance.Log(temp);
+            //}
+            writeAvgToFile();
+            
+            if (pbAvg.Count > avgAmount - 1)
+            {
+                // HKTimer.instance.Log("Avg: " + calcAvg(avgAmount));
+                avg = calcAvg(avgAmount);
+                avgText.text = this.AvgText();
+            }
             if(this.pb == null || this.pb == TimeSpan.Zero) {
+                this.avg = TimeSpan.Zero;
+                avgText.text = this.AvgText();
                 this.pb = time;
                 pbText.text = this.PbText();
                 this.pbDelta = TimeSpan.Zero;
@@ -201,6 +323,10 @@ namespace HKTimer {
         }
 
         public void ResetPB() {
+            pbAvg = new();
+            this.avg = TimeSpan.Zero;
+            this.avgDisplay.GetComponent<Text>().text = this.AvgText();
+
             this.pb = TimeSpan.Zero;
             this.pbDeltaDisplay.SetActive(false);
             this.pbDisplay.GetComponent<Text>().text = this.PbText();
@@ -218,6 +344,7 @@ namespace HKTimer {
                 switch(p) {
                     case "segment_start":
                         if(this.timer.state == Timer.TimerState.STOPPED) {
+                            // HKTimer.instance.timer.roomCounter = 0;
                             this.timer.ResetTimer();
                             this.timer.StartTimer();
                             this.runningSegment = true;
@@ -291,6 +418,10 @@ namespace HKTimer {
                         break;
                 }
                 this.start.Spawn(this);
+                pbAvg = new();
+                this.avg = TimeSpan.Zero;
+                this.avgDisplay.GetComponent<Text>().text = this.AvgText();
+
                 this.pb = TimeSpan.Zero;
                 this.pbDisplay.GetComponent<Text>().text = this.PbText();
             }
@@ -319,8 +450,7 @@ namespace HKTimer {
                         break;
                 };
                 this.end.Spawn(this);
-                this.pb = TimeSpan.Zero;
-                this.pbDisplay.GetComponent<Text>().text = this.PbText();
+                this.ResetPB();
             }
         }
         public void OnDestroy() {
@@ -335,9 +465,9 @@ namespace HKTimer {
         public void LoadTriggers() {
             try {
                 Modding.Logger.Log("[HKTimer] Loading triggers");
-                if(File.Exists(Application.persistentDataPath + "/hktimer_triggers.json")) {
+                if(File.Exists(HKTimer.HKTimerPath + "/triggers.json")) {
                     var triggers = JsonConvert.DeserializeObject<TriggerSaveFile>(File.ReadAllText(
-                        Application.persistentDataPath + "/hktimer_triggers.json"
+                        HKTimer.HKTimerPath + "/triggers.json"
                     ));
                     // Destroy all triggers
                     this.triggers?.ForEach(x => x.Destroy(this));
@@ -358,7 +488,7 @@ namespace HKTimer {
             try {
                 Modding.Logger.Log("[HKTimer] Saving triggers");
                 File.WriteAllText(
-                    Application.persistentDataPath + "/hktimer_triggers.json",
+                    HKTimer.HKTimerPath + "/triggers.json",
                     JsonConvert.SerializeObject(
                         new TriggerSaveFile() {
                             pb_ticks = this.pb.Ticks,

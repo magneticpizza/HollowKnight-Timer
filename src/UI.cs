@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing.Design;
 using Modding;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,6 +26,9 @@ namespace HKTimer.UI {
         public UIOption<int> avgAmountType { get; private set; }
         public UIButton saveTriggers { get; private set; }
         public UIButton loadTriggers { get; private set; }
+
+        private UIOption<int> widthSelector;
+        private UIOption<int> heightSelector;
 
         public UIButton reloadSettings { get; private set; }
 
@@ -132,13 +136,44 @@ namespace HKTimer.UI {
                     }
                 }
             );
+            this.widthSelector = new UIOption<int>(
+                CanvasUtil.CreateTextPanel(
+                    menu, "Width", 30, TextAnchor.MiddleLeft,
+                    new CanvasUtil.RectData(new Vector2(300, 60), new Vector2(-75, -240), MIDDLE, MIDDLE)
+                ),
+                CanvasUtil.CreateTextPanel(
+                    menu, "", 30, TextAnchor.MiddleRight,
+                    new CanvasUtil.RectData(new Vector2(300, 60), new Vector2(75, -240), MIDDLE, MIDDLE)
+                ),
+                new Vector2(-250, -240),
+                SizeOption.values,
+                (e) => {
+                    this.tm.width = e;
+                }
+            );
+
+            this.heightSelector = new UIOption<int>(
+                CanvasUtil.CreateTextPanel(
+                    menu, "Height", 30, TextAnchor.MiddleLeft,
+                    new CanvasUtil.RectData(new Vector2(300, 60), new Vector2(-75, -300), MIDDLE, MIDDLE)
+                ),
+                CanvasUtil.CreateTextPanel(
+                    menu, "", 30, TextAnchor.MiddleRight,
+                    new CanvasUtil.RectData(new Vector2(300, 60), new Vector2(75, -300), MIDDLE, MIDDLE)
+                ),
+                new Vector2(-250, -300),
+                SizeOption.values,
+                (e) => {
+                    this.tm.height = e;
+                }
+            );
 
             this.reloadSettings = new UIButton(
                 CanvasUtil.CreateTextPanel(
                     menu, "Reload Settings", 30, TextAnchor.MiddleCenter,
-                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -300), MIDDLE, MIDDLE)
+                    new CanvasUtil.RectData(new Vector2(360, 60), new Vector2(0, -360), MIDDLE, MIDDLE)
                 ),
-                new Vector2(-210, -300),
+                new Vector2(-210, -360),
                 () => {
                     if(this.hktimer != null) {
                         this.hktimer.ReloadSettings();
@@ -159,6 +194,8 @@ namespace HKTimer.UI {
                 this.avgAmountType,
                 this.saveTriggers,
                 this.loadTriggers,
+                this.widthSelector,
+                this.heightSelector,
                 this.reloadSettings
             };
             this.SetShown(false);
@@ -232,7 +269,12 @@ namespace HKTimer.UI {
 
     public class AvgOption
     {
-        public static readonly int[] values = { 3, 5, 10, 15 };
+        public static readonly int[] values = [3, 5, 10, 15];
+    }
+
+    public class SizeOption
+    {
+        public static readonly int[] values = [1, 2, 3, 4, 5, 10, 20, 40, 80, 100];
     }
 
     public class TriggerTypeOption {
@@ -342,6 +384,73 @@ namespace HKTimer.UI {
             }
         }
     }
+    
+    /*public class UIIntSelector : UIElement
+    {
+        private GameObject nameEl;
+        private GameObject valEl;
+        private Action<int> onUpdate;
+        public Text nameText { get; private set; }
+        public Text valText { get; private set; }
+
+        private int min = 1;
+        private int max = 100;
+        public int value = 1;
+
+        public override Vector2 cursorPos { get; protected set; }
+
+        public UIIntSelector(
+            GameObject nameEl,
+            GameObject valEl,
+            Vector2 cursorAnchor,
+            Action<int> onUpdate,
+            int defaultValue
+        )
+        {
+            this.value = defaultValue;
+            this.nameEl = nameEl;
+            this.cursorPos = cursorAnchor;
+            this.valEl = valEl;
+            this.onUpdate = onUpdate;
+            this.nameText = nameEl.GetComponent<Text>();
+            this.valText = valEl.GetComponent<Text>();
+            this.UpdateText();
+        }
+
+        private void UpdateText()
+        {
+            this.valText.text = this.value.ToString();
+        }
+
+        public override void Left()
+        {
+            if (value > min) value -= 1;
+
+            // update stuff
+            if (this.onUpdate != null) this.onUpdate(this.value);
+            this.UpdateText();
+            base.Left();
+        }
+
+        public override void Right()
+        {
+            if(value < max) value += 1;
+            if (this.onUpdate != null) this.onUpdate(this.value);
+            this.UpdateText();
+            base.Right();
+        }
+
+        public override void SetShown(bool show)
+        {
+            this.nameEl.SetActive(show);
+            this.valEl.SetActive(show);
+            if (show)
+            {
+                GameObject.DontDestroyOnLoad(this.nameEl);
+                GameObject.DontDestroyOnLoad(this.valEl);
+            }
+        }
+    }*/
 
     public class UIButton : UIElement {
         private GameObject el;

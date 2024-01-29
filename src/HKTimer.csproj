@@ -9,7 +9,7 @@
         <Copyright>Copyright © 2021</Copyright>
         <OutputPath>bin\$(Configuration)\</OutputPath>
         <LangVersion>latest</LangVersion>
-        <HollowKnightRefs>G:\Games\Hollow Knight\Hollow Knight 1221\hollow_knight_Data\Managed\</HollowKnightRefs>
+        <HollowKnightRefs>C:\HK installs\Hollow Knight - Mods\hollow_knight_Data\Managed\</HollowKnightRefs>
     </PropertyGroup>
     <ItemGroup>
         <Reference Include="Assembly-CSharp">

@@ -18,7 +18,7 @@ namespace HKTimer {
         public TimeSpan pb { get; set; } = TimeSpan.Zero;
         public TimeSpan pbDelta { get; set; } = TimeSpan.Zero;
         public TimeSpan avg { get; set; } = TimeSpan.Zero;
-
+        public int width = 1, height = 1;
         public int avgAmount = 3;
         public List<TimeSpan> pbAvg = new();
         public bool runningSegment { get; set; } = false;
@@ -385,12 +385,13 @@ namespace HKTimer {
                 this.start?.Destroy(this);
                 switch(this.triggerPlaceType) {
                     case TriggerPlaceType.Collision:
-                        this.start = new CollisionTrigger() {
+                        this.start = new CollisionTrigger()
+                        {
                             scene = GameManager.instance.sceneName,
                             logic = new JValue("segment_start"),
                             color = "green",
-                            start = HeroController.instance.transform.position - new Vector3(0.1f, 0.1f),
-                            end = HeroController.instance.transform.position + new Vector3(0.1f, 0.1f),
+                            start = HeroController.instance.transform.position - new Vector3(width * 0.1f, height * 0.1f),
+                            end = HeroController.instance.transform.position + new Vector3(width * 0.1f, height * 0.1f),
                         };
                         break;
                     case TriggerPlaceType.Movement:
@@ -433,8 +434,8 @@ namespace HKTimer {
                             scene = GameManager.instance.sceneName,
                             logic = new JValue("segment_end"),
                             color = "red",
-                            start = HeroController.instance.transform.position - new Vector3(0.1f, 0.1f),
-                            end = HeroController.instance.transform.position + new Vector3(0.1f, 0.1f),
+                            start = HeroController.instance.transform.position - new Vector3(width * 0.1f, height * 0.1f),
+                            end = HeroController.instance.transform.position + new Vector3(width * 0.1f, height * 0.1f),
                         };
                         break;
                     case TriggerPlaceType.Movement:

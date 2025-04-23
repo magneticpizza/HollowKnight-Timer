@@ -2,7 +2,7 @@
 Hollow Knight in-game timer mod
 
 ## Installation
-To install the mod, grab the release ZIP from [the latest 1.2.2.1 release](https://github.com/Yurihaia/HollowKnight-Timer/releases/tag/v0.1.0).
+To install the mod, grab the release ZIP from [the latest 1.2.2.1 release](https://github.com/magneticpizza/HollowKnight-Timer/releases/tag/0.1.13).
 Extract all 3 `.dll` files into the `Mods` folder in your Hollow Knight installation.  
 The modding API will say that `System.Runtime.Serialization.dll` failed to load but this is completely normal
 
